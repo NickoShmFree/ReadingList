@@ -5,7 +5,6 @@ import uvicorn
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from cfg.app import app_cfg
 from cfg.logging import LOGGING_CONFIG
@@ -14,20 +13,20 @@ from cfg.logging import LOGGING_CONFIG
 # dictConfig(LOGGING_CONFIG)
 # logger = logging.getLogger("app")
 
-# from api import router
-# from db.connector import ConnectionManager
+from api import router
+from db.connector import ConnectionManager
 
 
-# @asynccontextmanager
-# async def lifespan(app_: FastAPI):
-#     manager = ConnectionManager()
-#     manager.connect()
-#     yield
-#     await manager.disconnect()
+@asynccontextmanager
+async def lifespan(app_: FastAPI):
+    manager = ConnectionManager()
+    manager.connect()
+    yield
+    await manager.disconnect()
 
 
 app = FastAPI(
-    # lifespan=lifespan,
+    lifespan=lifespan,
     # docs_url=app_conf.run.docs_url,
     # redoc_url=app_conf.run.redoc_url,
     # openapi_url=app_conf.run.openapi_url,
@@ -41,7 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# app.include_router(router)
+app.include_router(router)
 
 
 if __name__ == "__main__":
