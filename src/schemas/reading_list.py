@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
 
@@ -218,36 +218,36 @@ class ReadingListUpdateSchema(BaseModel):
         str_strip_whitespace=True,
     )
 
-    title: Optional[str] = Field(
+    title: str | None = Field(
         default=None,
         min_length=ReadingListBaseSchema.TITLE_MIN_LENGTH,
         max_length=ReadingListBaseSchema.TITLE_MAX_LENGTH,
         description="Новое название",
     )
 
-    kind: Optional[KindReadingListEnum] = Field(
+    kind: KindReadingListEnum | None = Field(
         default=None,
         description="Новый тип",
     )
 
-    status: Optional[StatusReadingListEnum] = Field(
+    status: StatusReadingListEnum | None = Field(
         default=None,
         description="Новый статус",
     )
 
-    priority: Optional[PriorityReadingListEnum] = Field(
+    priority: PriorityReadingListEnum | None = Field(
         default=None,
         description="Новый приоритет",
     )
 
-    notes: Optional[str] = Field(
+    notes: str | None = Field(
         default=None,
         min_length=ReadingListBaseSchema.NOTES_MIN_LENGTH,
         max_length=ReadingListBaseSchema.NOTES_MAX_LENGTH,
         description="Новые заметки",
     )
 
-    tags: Optional[list[str]] = Field(
+    tags: list[str] | None = Field(
         default=None,
         description="Новый список тегов",
     )
