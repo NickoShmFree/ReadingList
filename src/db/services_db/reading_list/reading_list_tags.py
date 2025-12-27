@@ -1,0 +1,33 @@
+from typing import TYPE_CHECKING, Sequence
+
+from sqlalchemy.ext.asyncio.session import AsyncSession
+
+from db.repo.app import ReadingListTagRepo
+from db.models import ReadingListTagDB
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from db.models import TagDB
+
+
+class ReadingListTagServiceDB:
+    """Сервис для работы со связями между ReadingList и Tag (M2M)."""
+
+    def __init__(self, session: "AsyncSession") -> None:
+        self.repo = ReadingListTagRepo(session)
+
+    async def add(
+        self,
+        reading_list_id: int,
+        tags: Sequence["TagDB"],
+    ) -> list[ReadingListTagDB]:
+        models = [
+            ReadingListTagDB(
+                reading_list_id=reading_list_id,
+                tag_id=tag.id,
+            )
+            for tag in tags
+        ]
+        await self.repo.add(models=models)
+        return models
