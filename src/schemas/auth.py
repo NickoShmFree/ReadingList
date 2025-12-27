@@ -11,6 +11,7 @@ class JWTPayloadRefresh(BaseModel):
 
 class JWTPayloadAccess(JWTPayloadRefresh):
     display_name: str
+    email: str
 
 
 class UserLoginSchema(BaseModel):
