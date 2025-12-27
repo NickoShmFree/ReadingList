@@ -54,8 +54,7 @@ def create_access_token(user: "UserDB") -> str:
         str: Access токен.
     """
     jwt_payload = JWTPayloadAccess(
-        sub=str(user.id),
-        display_name=user.display_name,
+        sub=str(user.id), display_name=user.display_name, email=user.email
     ).model_dump(serialize_as_any=True)
     return create_jwt(
         token_type=TokenType.access,

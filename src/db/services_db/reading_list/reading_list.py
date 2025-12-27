@@ -8,7 +8,7 @@ from db.models import ReadingListDB
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from schemas import ReadingListResponseSchema
+    from schemas import ReadingListCreateSchema
 
 
 class ReadingListServiceDB:
@@ -20,7 +20,7 @@ class ReadingListServiceDB:
     async def add(
         self,
         user_id: int,
-        reading_list: "ReadingListResponseSchema",
+        reading_list: "ReadingListCreateSchema",
     ) -> ReadingListDB:
         model = ReadingListDB(
             user_id=user_id,
