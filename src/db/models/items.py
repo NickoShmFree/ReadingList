@@ -7,49 +7,49 @@ from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base, CreatedAtMixin, IdIntMixin, UpdatedAtMixin
 
 
-class KindReadingListEnum(str, PyEnum):
+class KindItemEnum(str, PyEnum):
     BOOK = "книга"
     ARTICLE = "статья"
 
 
-class StatusReadingListEnum(str, PyEnum):
+class StatusItemEnum(str, PyEnum):
     PLANNED = "планирую прочитать"
     READING = "читаю"
     DONE = "прочитал"
 
 
-class PriorityReadingListEnum(str, PyEnum):
+class PriorityItemEnum(str, PyEnum):
     LOW = "низкий"
     NORMAL = "средний"
     HIGH = "высокий"
 
 
-class ReadingListDB(Base, CreatedAtMixin, IdIntMixin, UpdatedAtMixin):
+class ItemDB(Base, CreatedAtMixin, IdIntMixin, UpdatedAtMixin):
     __tablename__ = "reading_list"
 
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     title: Mapped[str] = mapped_column(String(100), index=True)
-    kind: Mapped[KindReadingListEnum] = mapped_column(
+    kind: Mapped[KindItemEnum] = mapped_column(
         Enum(
-            KindReadingListEnum,
+            KindItemEnum,
             name="kind_enum",
             native_enum=True,
             create_constraint=True,
         ),
     )
-    status: Mapped[StatusReadingListEnum] = mapped_column(
+    status: Mapped[StatusItemEnum] = mapped_column(
         Enum(
-            StatusReadingListEnum,
+            StatusItemEnum,
             name="status_enum",
             native_enum=True,
             create_constraint=True,
         ),
     )
-    priority: Mapped[PriorityReadingListEnum] = mapped_column(
+    priority: Mapped[PriorityItemEnum] = mapped_column(
         Enum(
-            PriorityReadingListEnum,
+            PriorityItemEnum,
             name="priority_enum",
             native_enum=True,
             create_constraint=True,
@@ -70,7 +70,7 @@ class TagDB(Base, IdIntMixin):
     __table_args__ = (UniqueConstraint("user_id", "name", name="uq_user_id_name"),)
 
 
-class ReadingListTagDB(Base, IdIntMixin):
+class ItemTagDB(Base, IdIntMixin):
     __tablename__ = "reading_list_tags"
     reading_list_id: Mapped[int] = mapped_column(
         ForeignKey("reading_list.id", ondelete="CASCADE"), nullable=False, index=True

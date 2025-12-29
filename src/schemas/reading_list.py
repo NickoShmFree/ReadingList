@@ -3,14 +3,14 @@ from typing import ClassVar
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
 
-from db.models.reading_list import (
-    StatusReadingListEnum,
-    KindReadingListEnum,
-    PriorityReadingListEnum,
+from db.models.items import (
+    StatusItemEnum,
+    KindItemEnum,
+    PriorityItemEnum,
 )
 
 
-class ReadingListBaseSchema(BaseModel):
+class ItemBaseSchema(BaseModel):
     """
     Базовая схема для списков чтения.
     Содержит общие поля и валидацию.
@@ -43,21 +43,21 @@ class ReadingListBaseSchema(BaseModel):
         examples=["Чистый код", "Грокаем алгоритмы"],
     )
 
-    kind: KindReadingListEnum = Field(
+    kind: KindItemEnum = Field(
         description="Тип элемента: книга или статья",
-        examples=[KindReadingListEnum.BOOK],
+        examples=[KindItemEnum.BOOK],
     )
 
-    status: StatusReadingListEnum = Field(
+    status: StatusItemEnum = Field(
         description="Статус чтения: планирую, читаю, прочитал",
-        examples=[StatusReadingListEnum.PLANNED],
-        default=StatusReadingListEnum.PLANNED,
+        examples=[StatusItemEnum.PLANNED],
+        default=StatusItemEnum.PLANNED,
     )
 
-    priority: PriorityReadingListEnum = Field(
+    priority: PriorityItemEnum = Field(
         description="Приоритет чтения: низкий, средний, высокий",
-        examples=[PriorityReadingListEnum.NORMAL],
-        default=PriorityReadingListEnum.NORMAL,
+        examples=[PriorityItemEnum.NORMAL],
+        default=PriorityItemEnum.NORMAL,
     )
 
     notes: str = Field(
@@ -179,27 +179,24 @@ class ReadingListBaseSchema(BaseModel):
         return processed_tags
 
     @model_validator(mode="after")
-    def validate_cross_field_rules(self) -> "ReadingListBaseSchema":
+    def validate_cross_field_rules(self) -> "ItemBaseSchema":
         """
         Кросс-полевая валидация.
 
         Проверяет зависимости между полями.
         """
         # Пример: если статус "прочитал", заметки не могут быть пустыми
-        if self.status == StatusReadingListEnum.DONE and not self.notes.strip():
+        if self.status == StatusItemEnum.DONE and not self.notes.strip():
             raise ValueError("Для прочитанных элементов необходимо добавить заметки")
 
         # Пример: статьи не могут иметь высокий приоритет
-        if (
-            self.kind == KindReadingListEnum.ARTICLE
-            and self.priority == PriorityReadingListEnum.HIGH
-        ):
+        if self.kind == KindItemEnum.ARTICLE and self.priority == PriorityItemEnum.HIGH:
             raise ValueError("Статьи не могут иметь высокий приоритет")
 
         return self
 
 
-class ReadingListCreateSchema(ReadingListBaseSchema):
+class ItemCreateSchema(ItemBaseSchema):
     """
     Схема для создания нового списка чтения.
     Наследует всю валидацию из базовой схемы.
@@ -208,7 +205,7 @@ class ReadingListCreateSchema(ReadingListBaseSchema):
     pass
 
 
-class ReadingListUpdateSchema(BaseModel):
+class ItemUpdateSchema(BaseModel):
     """
     Схема для обновления списка чтения.
     Все поля опциональны.
@@ -220,30 +217,30 @@ class ReadingListUpdateSchema(BaseModel):
 
     title: str | None = Field(
         default=None,
-        min_length=ReadingListBaseSchema.TITLE_MIN_LENGTH,
-        max_length=ReadingListBaseSchema.TITLE_MAX_LENGTH,
+        min_length=ItemBaseSchema.TITLE_MIN_LENGTH,
+        max_length=ItemBaseSchema.TITLE_MAX_LENGTH,
         description="Новое название",
     )
 
-    kind: KindReadingListEnum | None = Field(
+    kind: KindItemEnum | None = Field(
         default=None,
         description="Новый тип",
     )
 
-    status: StatusReadingListEnum | None = Field(
+    status: StatusItemEnum | None = Field(
         default=None,
         description="Новый статус",
     )
 
-    priority: PriorityReadingListEnum | None = Field(
+    priority: PriorityItemEnum | None = Field(
         default=None,
         description="Новый приоритет",
     )
 
     notes: str | None = Field(
         default=None,
-        min_length=ReadingListBaseSchema.NOTES_MIN_LENGTH,
-        max_length=ReadingListBaseSchema.NOTES_MAX_LENGTH,
+        min_length=ItemBaseSchema.NOTES_MIN_LENGTH,
+        max_length=ItemBaseSchema.NOTES_MAX_LENGTH,
         description="Новые заметки",
     )
 
@@ -253,7 +250,7 @@ class ReadingListUpdateSchema(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_at_least_one_field(self) -> "ReadingListUpdateSchema":
+    def validate_at_least_one_field(self) -> "ItemUpdateSchema":
         """
         Проверяет, что передан хотя бы один параметр для обновления.
         """
@@ -262,7 +259,7 @@ class ReadingListUpdateSchema(BaseModel):
         return self
 
 
-class ReadingListResponseSchema(BaseModel):
+class ItemResponseSchema(BaseModel):
     """Схема для ответа API при чтении списка чтения."""
 
     model_config = ConfigDict(
@@ -280,19 +277,19 @@ class ReadingListResponseSchema(BaseModel):
         examples=["Чистый код"],
     )
 
-    kind: KindReadingListEnum = Field(
+    kind: KindItemEnum = Field(
         description="Тип элемента",
-        examples=[KindReadingListEnum.BOOK],
+        examples=[KindItemEnum.BOOK],
     )
 
-    status: StatusReadingListEnum = Field(
+    status: StatusItemEnum = Field(
         description="Статус чтения",
-        examples=[StatusReadingListEnum.PLANNED],
+        examples=[StatusItemEnum.PLANNED],
     )
 
-    priority: PriorityReadingListEnum = Field(
+    priority: PriorityItemEnum = Field(
         description="Приоритет",
-        examples=[PriorityReadingListEnum.NORMAL],
+        examples=[PriorityItemEnum.NORMAL],
     )
 
     notes: str = Field(

@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from .sa import SARepository
-from db.models import UserDB, ReadingListDB, TagDB, ReadingListTagDB
+from db.models import UserDB, ItemDB, TagDB, ItemTagDB
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,9 +12,9 @@ class UserRepo(SARepository[UserDB]):
         super().__init__(session=session, model_type=UserDB)
 
 
-class ReadingListRepo(SARepository[ReadingListDB]):
+class ItemRepo(SARepository[ItemDB]):
     def __init__(self, session: "AsyncSession"):
-        super().__init__(session=session, model_type=ReadingListDB)
+        super().__init__(session=session, model_type=ItemDB)
 
 
 class TagRepo(SARepository[TagDB]):
@@ -22,6 +22,6 @@ class TagRepo(SARepository[TagDB]):
         super().__init__(session=session, model_type=TagDB)
 
 
-class ReadingListTagRepo(SARepository[ReadingListTagDB]):
+class ItemTagRepo(SARepository[ItemTagDB]):
     def __init__(self, session: "AsyncSession"):
-        super().__init__(session=session, model_type=ReadingListTagDB)
+        super().__init__(session=session, model_type=ItemTagDB)

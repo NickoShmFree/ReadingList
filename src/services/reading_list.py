@@ -1,24 +1,22 @@
 from typing import TYPE_CHECKING, Sequence
 
-from schemas import ReadingListResponseSchema
+from schemas import ItemResponseSchema
 
 if TYPE_CHECKING:
     from db.provider import Provider
-    from schemas import ReadingListCreateSchema
-    from db.models import ReadingListDB, TagDB
+    from schemas import ItemCreateSchema
+    from db.models import ItemDB, TagDB
 
 
-class ReadingListService:
-    """Сервис для управления списками чтения (ReadingList)"""
+class ItemService:
+    """Сервис для управления списками чтения (Item)"""
 
     provider_db: "Provider"
 
     def __init__(self, provider_db: "Provider") -> None:
         self.provider_db = provider_db
 
-    async def add(
-        self, user_id: int, item: "ReadingListCreateSchema"
-    ) -> ReadingListResponseSchema:
+    async def add(self, user_id: int, item: "ItemCreateSchema") -> ItemResponseSchema:
         """
         Создает новую книгу (статью) чтения с тегами.
 
@@ -30,9 +28,7 @@ class ReadingListService:
             Созданный список чтения
         """
         result_tags: list["TagDB"] = []
-        reading_list: "ReadingListDB" = await self.provider_db.reading_list.add(
-            user_id, item
-        )
+        reading_list: "ItemDB" = await self.provider_db.reading_list.add(user_id, item)
         if item.tags:
             existing_tags, new_tag_names = (
                 await self.provider_db.tag.get_existing_and_new_tags(user_id, item.tags)
@@ -47,7 +43,7 @@ class ReadingListService:
                 result_tags = list(existing_tags)
             await self.provider_db.reading_list_tag.add(reading_list.id, result_tags)
         await self.provider_db.session.commit()
-        return ReadingListResponseSchema(
+        return ItemResponseSchema(
             id=reading_list.id,
             title=reading_list.title,
             kind=reading_list.kind,

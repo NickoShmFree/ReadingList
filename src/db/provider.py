@@ -2,8 +2,8 @@ from typing import TYPE_CHECKING
 
 from .services_db import (
     UserServiceDB,
-    ReadingListServiceDB,
-    ReadingListTagServiceDB,
+    ItemServiceDB,
+    ItemTagServiceDB,
     TagServiceDB,
 )
 
@@ -18,9 +18,9 @@ class Provider:
 
     user: UserServiceDB
 
-    reading_list: ReadingListServiceDB
+    reading_list: ItemServiceDB
     tag: TagServiceDB
-    reading_list_tag: ReadingListTagServiceDB
+    reading_list_tag: ItemTagServiceDB
 
     def __init__(self, session: "AsyncSession") -> None:
 
@@ -28,6 +28,6 @@ class Provider:
 
         self.user = UserServiceDB(self.session)
 
-        self.reading_list = ReadingListServiceDB(self.session)
+        self.reading_list = ItemServiceDB(self.session)
         self.tag = TagServiceDB(self.session)
-        self.reading_list_tag = ReadingListTagServiceDB(self.session)
+        self.reading_list_tag = ItemTagServiceDB(self.session)

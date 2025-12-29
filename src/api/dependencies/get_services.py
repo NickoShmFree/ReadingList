@@ -5,7 +5,7 @@ from fastapi import Depends, Response
 from utils.exceptions import AppErrors
 from services.auth.cookie import cookie_transport
 from db.connector import get_provider
-from services import AuthService, ReadingListService
+from services import AuthService, ItemService
 from .get_current_user import CurrentUser
 
 if TYPE_CHECKING:
@@ -20,8 +20,8 @@ def get_auth_service(
 
 def get_reading_list_service(
     provider: Annotated["Provider", Depends(get_provider)],
-) -> ReadingListService:
-    return ReadingListService(provider)
+) -> ItemService:
+    return ItemService(provider)
 
 
 def get_current_user_service(
