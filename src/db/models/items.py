@@ -25,7 +25,7 @@ class PriorityItemEnum(str, PyEnum):
 
 
 class ItemDB(Base, CreatedAtMixin, IdIntMixin, UpdatedAtMixin):
-    __tablename__ = "reading_list"
+    __tablename__ = "item"
 
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True
@@ -71,9 +71,9 @@ class TagDB(Base, IdIntMixin):
 
 
 class ItemTagDB(Base, IdIntMixin):
-    __tablename__ = "reading_list_tags"
-    reading_list_id: Mapped[int] = mapped_column(
-        ForeignKey("reading_list.id", ondelete="CASCADE"), nullable=False, index=True
+    __tablename__ = "item_tags"
+    item_id: Mapped[int] = mapped_column(
+        ForeignKey("item.id", ondelete="CASCADE"), nullable=False, index=True
     )
     tag_id: Mapped[int] = mapped_column(
         ForeignKey("tags.id", ondelete="CASCADE"), nullable=False, index=True

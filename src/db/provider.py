@@ -18,9 +18,9 @@ class Provider:
 
     user: UserServiceDB
 
-    reading_list: ItemServiceDB
+    item: ItemServiceDB
     tag: TagServiceDB
-    reading_list_tag: ItemTagServiceDB
+    item_tag: ItemTagServiceDB
 
     def __init__(self, session: "AsyncSession") -> None:
 
@@ -28,6 +28,6 @@ class Provider:
 
         self.user = UserServiceDB(self.session)
 
-        self.reading_list = ItemServiceDB(self.session)
+        self.item = ItemServiceDB(self.session)
         self.tag = TagServiceDB(self.session)
-        self.reading_list_tag = ItemTagServiceDB(self.session)
+        self.item_tag = ItemTagServiceDB(self.session)

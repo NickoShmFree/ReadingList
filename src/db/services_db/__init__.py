@@ -1,7 +1,7 @@
 from .user import UserServiceDB
-from .reading_list.reading_list import ItemServiceDB
-from .reading_list.tags import TagServiceDB
-from .reading_list.reading_list_tags import ItemTagServiceDB
+from .item.item import ItemServiceDB
+from .item.tags import TagServiceDB
+from .item.item_tags import ItemTagServiceDB
 
 
 __all__ = [

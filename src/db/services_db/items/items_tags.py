@@ -19,12 +19,12 @@ class ItemTagServiceDB:
 
     async def add(
         self,
-        reading_list_id: int,
+        item_id: int,
         tags: Sequence["TagDB"],
     ) -> list[ItemTagDB]:
         models = [
             ItemTagDB(
-                reading_list_id=reading_list_id,
+                item_id=item_id,
                 tag_id=tag.id,
             )
             for tag in tags

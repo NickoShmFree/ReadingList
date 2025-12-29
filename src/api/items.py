@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from schemas import ItemCreateSchema, ItemResponseSchema
 from api.dependencies.get_services import (
-    get_reading_list_service,
+    get_item_service,
     get_current_user_service,
 )
 from schemas.user import CurrentUserSchema
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/reading-list", tags=["Reading List"])
 
 @router.post("/add")
 async def add(
-    reading_list_service: Annotated["ItemService", Depends(get_reading_list_service)],
+    item_service: Annotated["ItemService", Depends(get_item_service)],
     current_user_service: Annotated["CurrentUser", Depends(get_current_user_service)],
     item: ItemCreateSchema,
 ) -> ItemResponseSchema:
@@ -30,7 +30,7 @@ async def add(
     с указанием статуса, приоритета, заметок и тегов.
 
     Args:
-        reading_list_service: Сервис для работы со списками чтения.
+        item_service: Сервис для работы со списками чтения.
         current_user_service: Сервис для получения текущего пользователя.
         item: Данные для создания списка чтения.
 
@@ -38,4 +38,4 @@ async def add(
         ItemResponseSchema: Созданный список чтения с присвоенным ID.
     """
     current_user: CurrentUserSchema = await current_user_service.get_user_by_token()
-    return await reading_list_service.add(current_user.id, item)
+    return await item_service.add(current_user.id, item)

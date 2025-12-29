@@ -18,7 +18,7 @@ def get_auth_service(
     return AuthService(provider)
 
 
-def get_reading_list_service(
+def get_item_service(
     provider: Annotated["Provider", Depends(get_provider)],
 ) -> ItemService:
     return ItemService(provider)
