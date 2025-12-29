@@ -1,5 +1,5 @@
 from .auth.auth import AuthService
-from .reading_list import ItemService
+from .items import ItemService
 
 
 __all__ = ["AuthService", "ItemService"]
