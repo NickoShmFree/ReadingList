@@ -1,7 +1,7 @@
 from .user import UserServiceDB
-from .item.item import ItemServiceDB
-from .item.tags import TagServiceDB
-from .item.item_tags import ItemTagServiceDB
+from .items.items import ItemServiceDB, SortBy, SortOrder
+from .items.tags import TagServiceDB
+from .items.items_tags import ItemTagServiceDB
 
 
 __all__ = [
@@ -9,4 +9,6 @@ __all__ = [
     "ItemServiceDB",
     "ItemTagServiceDB",
     "TagServiceDB",
+    "SortBy",
+    "SortOrder",
 ]

@@ -1,6 +1,11 @@
 from .user import UserCreateSchema, UserReadSchema, UserCreateSchema, CurrentUserSchema
 from .auth import UserLoginSchema, JWTPayloadAccess, JWTPayloadRefresh
-from .items import ItemCreateSchema, ItemResponseSchema
+from .items import (
+    ItemCreateSchema,
+    ItemResponseSchema,
+    ItemUpdateSchema,
+    ItemFilters,
+)
 
 
 __all__ = [
@@ -13,4 +18,6 @@ __all__ = [
     "ItemCreateSchema",
     "ItemResponseSchema",
     "CurrentUserSchema",
+    "ItemUpdateSchema",
+    "ItemFilters",
 ]

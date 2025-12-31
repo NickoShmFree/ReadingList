@@ -32,6 +32,12 @@ class AppErrors(HTTPException):
         return AppErrors(status.HTTP_404_NOT_FOUND, detail, headers)
 
     @staticmethod
+    def gone(
+        detail: str = "Not found", headers: dict[str, str] | None = None
+    ) -> "AppErrors":
+        return AppErrors(status.HTTP_410_GONE, detail, headers)
+
+    @staticmethod
     def internal_server_error(
         detail: str = "Internal server error", headers: dict[str, str] | None = None
     ):

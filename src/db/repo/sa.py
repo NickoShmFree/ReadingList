@@ -1,4 +1,14 @@
-from typing import TypeVar, Generic, Sequence, Any, overload, TYPE_CHECKING
+from typing import (
+    TypeVar,
+    Generic,
+    Sequence,
+    Any,
+    overload,
+    TYPE_CHECKING,
+    Literal,
+    Union,
+    Tuple,
+)
 
 from sqlalchemy import select, func, UnaryExpression, ColumnElement
 
@@ -101,17 +111,46 @@ class SARepository(Repository, Generic[Model]):
         offset: int = 0,
         order_by: Sequence[UnaryExpression] = (),
         options: Sequence["ORMOption"] | None = None,
-        joins: Sequence["InstrumentedAttribute"] | None = None,
+        joins: (
+            Sequence[
+                Union[
+                    "InstrumentedAttribute",
+                    Tuple["InstrumentedAttribute", ColumnElement[bool] | None],
+                ]
+            ]
+            | None
+        ) = None,
+        join_type: Literal["inner", "left"] = "inner",
+        select_from: Any | None = None,
+        distinct: bool = False,
     ) -> Sequence[Model]:
-        """Получить список записей из базы."""
-        stmt = select(self.model_type)
+        """Получить список записей из базы с расширенной поддержкой JOIN."""
+        stmt = select(self.model_type if select_from is None else select_from)
+
+        if distinct:
+            stmt = stmt.distinct()
+
+        # Обработка JOIN
+        if joins:
+            join_func = stmt.join if join_type == "inner" else stmt.outerjoin
+
+            for join_item in joins:
+                # Проверяем тип join_item
+                if isinstance(join_item, tuple) and len(join_item) == 2:
+                    table, on_clause = join_item
+                    if on_clause is not None:  # Явная проверка на None
+                        stmt = join_func(table, onclause=on_clause)
+                    else:
+                        stmt = join_func(table)
+                else:
+                    # Простой JOIN без условия ON
+                    stmt = join_func(join_item)
 
         stmt = stmt.where(*where).order_by(*order_by).limit(limit).offset(offset)
-        if joins:
-            for table in joins:
-                stmt = stmt.join(table)
+
         if options:
             stmt = stmt.options(*options)
+
         res = await self.session.execute(stmt)
         return res.scalars().all()
 

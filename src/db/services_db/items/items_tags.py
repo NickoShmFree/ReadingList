@@ -31,3 +31,9 @@ class ItemTagServiceDB:
         ]
         await self.repo.add(models=models)
         return models
+
+    async def delete(self, item_id: int, tags_id: list[int]):
+        models_db: Sequence[ItemTagDB] = await self.repo.get_many(
+            where=[ItemTagDB.item_id == item_id, ItemTagDB.tag_id.in_(tags_id)]
+        )
+        await self.repo.delete(models=list(models_db))

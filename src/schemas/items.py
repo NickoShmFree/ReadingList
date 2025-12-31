@@ -1,13 +1,15 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import ClassVar
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
 
 from db.models.items import (
-    StatusItemEnum,
-    KindItemEnum,
-    PriorityItemEnum,
+    ItemStatusEnum,
+    ItemKindEnum,
+    ItemPriorityEnum,
 )
+
+from db.services_db import SortOrder, SortBy
 
 
 class ItemBaseSchema(BaseModel):
@@ -43,21 +45,21 @@ class ItemBaseSchema(BaseModel):
         examples=["Чистый код", "Грокаем алгоритмы"],
     )
 
-    kind: KindItemEnum = Field(
+    kind: ItemKindEnum = Field(
         description="Тип элемента: книга или статья",
-        examples=[KindItemEnum.BOOK],
+        examples=[ItemKindEnum.BOOK],
     )
 
-    status: StatusItemEnum = Field(
+    status: ItemStatusEnum = Field(
         description="Статус чтения: планирую, читаю, прочитал",
-        examples=[StatusItemEnum.PLANNED],
-        default=StatusItemEnum.PLANNED,
+        examples=[ItemStatusEnum.PLANNED],
+        default=ItemStatusEnum.PLANNED,
     )
 
-    priority: PriorityItemEnum = Field(
+    priority: ItemPriorityEnum = Field(
         description="Приоритет чтения: низкий, средний, высокий",
-        examples=[PriorityItemEnum.NORMAL],
-        default=PriorityItemEnum.NORMAL,
+        examples=[ItemPriorityEnum.NORMAL],
+        default=ItemPriorityEnum.NORMAL,
     )
 
     notes: str = Field(
@@ -178,23 +180,6 @@ class ItemBaseSchema(BaseModel):
 
         return processed_tags
 
-    @model_validator(mode="after")
-    def validate_cross_field_rules(self) -> "ItemBaseSchema":
-        """
-        Кросс-полевая валидация.
-
-        Проверяет зависимости между полями.
-        """
-        # Пример: если статус "прочитал", заметки не могут быть пустыми
-        if self.status == StatusItemEnum.DONE and not self.notes.strip():
-            raise ValueError("Для прочитанных элементов необходимо добавить заметки")
-
-        # Пример: статьи не могут иметь высокий приоритет
-        if self.kind == KindItemEnum.ARTICLE and self.priority == PriorityItemEnum.HIGH:
-            raise ValueError("Статьи не могут иметь высокий приоритет")
-
-        return self
-
 
 class ItemCreateSchema(ItemBaseSchema):
     """
@@ -205,61 +190,72 @@ class ItemCreateSchema(ItemBaseSchema):
     pass
 
 
-class ItemUpdateSchema(BaseModel):
-    """
-    Схема для обновления списка чтения.
-    Все поля опциональны.
-    """
-
-    model_config = ConfigDict(
-        str_strip_whitespace=True,
+class IdSchema(BaseModel):
+    id: int = Field(
+        description="Уникальный идентификатор",
+        examples=[1, 42, 100],
     )
 
-    title: str | None = Field(
-        default=None,
-        min_length=ItemBaseSchema.TITLE_MIN_LENGTH,
-        max_length=ItemBaseSchema.TITLE_MAX_LENGTH,
-        description="Новое название",
-    )
 
-    kind: KindItemEnum | None = Field(
-        default=None,
-        description="Новый тип",
-    )
-
-    status: StatusItemEnum | None = Field(
-        default=None,
-        description="Новый статус",
-    )
-
-    priority: PriorityItemEnum | None = Field(
-        default=None,
-        description="Новый приоритет",
-    )
-
-    notes: str | None = Field(
-        default=None,
-        min_length=ItemBaseSchema.NOTES_MIN_LENGTH,
-        max_length=ItemBaseSchema.NOTES_MAX_LENGTH,
-        description="Новые заметки",
-    )
-
-    tags: list[str] | None = Field(
-        default=None,
-        description="Новый список тегов",
-    )
-
-    @model_validator(mode="after")
-    def validate_at_least_one_field(self) -> "ItemUpdateSchema":
-        """
-        Проверяет, что передан хотя бы один параметр для обновления.
-        """
-        if all(value is None for value in self.model_dump().values()):
-            raise ValueError("Должен быть указан хотя бы один параметр для обновления")
-        return self
+class ItemUpdateSchema(ItemBaseSchema, IdSchema):
+    pass
 
 
-class ItemResponseSchema(BaseModel):
+# class ItemUpdateSchema(BaseModel):
+#     """
+#     Схема для обновления списка чтения.
+#     Все поля опциональны.
+#     """
+
+#     model_config = ConfigDict(
+#         str_strip_whitespace=True,
+#     )
+
+#     title: str | None = Field(
+#         default=None,
+#         min_length=ItemBaseSchema.TITLE_MIN_LENGTH,
+#         max_length=ItemBaseSchema.TITLE_MAX_LENGTH,
+#         description="Новое название",
+#     )
+
+#     kind: ItemKindEnum | None = Field(
+#         default=None,
+#         description="Новый тип",
+#     )
+
+#     status: ItemStatusEnum | None = Field(
+#         default=None,
+#         description="Новый статус",
+#     )
+
+#     priority: ItemKindEnum | None = Field(
+#         default=None,
+#         description="Новый приоритет",
+#     )
+
+#     notes: str | None = Field(
+#         default=None,
+#         min_length=ItemBaseSchema.NOTES_MIN_LENGTH,
+#         max_length=ItemBaseSchema.NOTES_MAX_LENGTH,
+#         description="Новые заметки",
+#     )
+
+#     tags: list[str] | None = Field(
+#         default=None,
+#         description="Новый список тегов",
+#     )
+
+#     @model_validator(mode="after")
+#     def validate_at_least_one_field(self) -> "ItemUpdateSchema":
+#         """
+#         Проверяет, что передан хотя бы один параметр для обновления.
+#         """
+#         if all(value is None for value in self.model_dump().values()):
+#             raise ValueError("Должен быть указан хотя бы один параметр для обновления")
+#         return self
+
+
+class ItemResponseSchema(IdSchema):
     """Схема для ответа API при чтении списка чтения."""
 
     model_config = ConfigDict(
@@ -267,29 +263,24 @@ class ItemResponseSchema(BaseModel):
         frozen=True,
     )
 
-    id: int = Field(
-        description="Уникальный идентификатор",
-        examples=[1, 42, 100],
-    )
-
     title: str = Field(
         description="Название",
         examples=["Чистый код"],
     )
 
-    kind: KindItemEnum = Field(
+    kind: ItemKindEnum = Field(
         description="Тип элемента",
-        examples=[KindItemEnum.BOOK],
+        examples=[ItemKindEnum.BOOK],
     )
 
-    status: StatusItemEnum = Field(
+    status: ItemStatusEnum = Field(
         description="Статус чтения",
-        examples=[StatusItemEnum.PLANNED],
+        examples=[ItemStatusEnum.PLANNED],
     )
 
-    priority: PriorityItemEnum = Field(
+    priority: ItemPriorityEnum = Field(
         description="Приоритет",
-        examples=[PriorityItemEnum.NORMAL],
+        examples=[ItemPriorityEnum.NORMAL],
     )
 
     notes: str = Field(
@@ -312,3 +303,67 @@ class ItemResponseSchema(BaseModel):
         description="Дата последнего обновления",
         examples=["2024-01-16T14:20:00Z"],
     )
+
+
+class ItemFilters(BaseModel):
+    """Модель фильтров для элементов."""
+
+    status: ItemStatusEnum | None = None
+    kind: ItemKindEnum | None = None
+    priority: ItemPriorityEnum | None = None
+
+    title_search: str | None = None
+
+    tag_names: list[str] | None = None
+
+    created_from: date | None = None
+    created_to: date | None = None
+
+    include_deleted: bool = False
+
+    sort_by: SortBy
+    sort_order: SortOrder
+
+    offset: int = 0
+    limit: int = 20
+
+    @field_validator("tag_names")
+    @classmethod
+    def validate_tags(cls, v: list[str] | None) -> list[str] | None:
+        if v:
+            # Очищаем и дедуплицируем теги
+            cleaned = {tag.strip().lower() for tag in v if tag.strip()}
+            if not cleaned:
+                return None
+            return list(cleaned)
+        return v
+
+    @field_validator("sort_by")
+    @classmethod
+    def validate_sort_by(cls, v: str) -> str:
+        allowed = {"created_at", "updated_at", "priority"}
+        if v not in allowed:
+            raise ValueError(f"sort_by должно быть одним из: {allowed}")
+        return v
+
+    @field_validator("sort_order")
+    @classmethod
+    def validate_sort_order(cls, v: str) -> str:
+        if v not in {"asc", "desc"}:
+            raise ValueError("sort_order должно быть 'asc' или 'desc'")
+        return v
+
+    @model_validator(mode="after")
+    def validate_date_range(self) -> "ItemFilters":
+        """Кросс-полевая валидация: диапазон дат."""
+        if self.created_from and self.created_to:
+            if self.created_from > self.created_to:
+                raise ValueError("Дата 'created_from' не может быть позже 'created_to'")
+        today = date.today()
+        if self.created_from and self.created_from > today:
+            raise ValueError("Дата 'created_from' не может быть в будущем")
+
+        if self.created_to and self.created_to > today:
+            raise ValueError("Дата 'created_to' не может быть в будущем")
+
+        return self
