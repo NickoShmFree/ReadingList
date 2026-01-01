@@ -9,8 +9,8 @@ BASE_DIR = Path(__file__).resolve().parent
 
 
 class RunCfg(BaseSettings):
-    host: str = "localhost"
-    port: int = 8000
+    host: str = Field(default="localhost", alias="HOST")
+    port: int = Field(default=8000, alias="PORT")
     allow_origins: list[str] | str = Field(
         default=["http://127.0.0.1:3000", "http://localhost:3000"],
         alias="ALLOW_ORIGINS",
@@ -36,7 +36,6 @@ class AppCfg(BaseModel):
     RUN: RunCfg = RunCfg()
     COOKIES_CONF: CookiesConf = CookiesConf()
     JWT: AuthJWT = AuthJWT()
-    DOMAIN: str = "localhost:3000"
 
 
 app_cfg = AppCfg()

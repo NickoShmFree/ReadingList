@@ -1,0 +1,44 @@
+
+services:
+  db:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./src/secrets/db.env
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-user} -d ${NAME_DB:-readinglist}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      target: final
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./src/logs:/app/src/logs
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

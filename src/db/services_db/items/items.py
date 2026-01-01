@@ -27,7 +27,7 @@ class SortOrder(str, Enum):
 
 
 class ItemServiceDB:
-    """Сервис для работы с таблицей users (пользователи)"""
+    """Сервис для работы с таблицей items"""
 
     def __init__(self, session: "AsyncSession") -> None:
         self.repo = ItemRepo(session)
@@ -83,7 +83,6 @@ class ItemServiceDB:
                 column = getattr(ItemDB, field)
                 if value is not None:
                     where_conditions.append(column == value)
-
         if title_search and title_search.strip():
             search_term = f"%{title_search.strip()}%"
             where_conditions.append(ItemDB.title.ilike(search_term))

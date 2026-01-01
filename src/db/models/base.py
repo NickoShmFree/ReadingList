@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from sqlalchemy import TIMESTAMP, text
+from sqlalchemy import TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 

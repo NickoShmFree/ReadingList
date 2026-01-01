@@ -11,7 +11,24 @@ if TYPE_CHECKING:
 router = APIRouter(prefix="/auth", tags=["AUTH"])
 
 
-@router.post("/register")
+@router.post(
+    "/register",
+    responses={
+        200: {"description": "Пользователь успешно зарегистрирован"},
+        400: {"description": "Пользователь с такой почтой уже зарегистрирован"},
+    },
+    summary="Регистрация нового пользователя",
+    description="""
+    Создает новую учетную запись пользователя.
+    
+    Требования к данным:
+    - Email должен быть валидным и уникальным
+    - Пароль должен содержать минимум 8 символов
+    - Пароль должен содержать буквы в верхнем и нижнем регистре, а также цифры
+    
+    После успешной регистрации пользователь может войти в систему.
+    """,
+)
 async def register(
     user: UserCreateSchema,
     auth_service: Annotated["AuthService", Depends(get_auth_service)],
@@ -20,30 +37,30 @@ async def register(
     Регистрация нового пользователя.
 
     Создает учетную запись пользователя с указанными данными.
-    После успешной регистрации пользователь может войти в систему.
+    Пароль должен быть не менее 8 символов и содержать буквы в разных регистрах и цифры.
 
     Args:
         user: Данные для регистрации нового пользователя.
-              Включает email, пароль и имя пользователя.
-        auth_service: Сервис аутентификации, инжектированный через зависимость.
+        auth_service: Сервис аутентификации.
 
     Returns:
-        Словарь с сообщением об успешной регистрации.
-
-        Пример:
-        ```json
-        {"msg": "Новый пользователь зарегистрирован."}
-        ```
+        "msg": "Новый пользователь зарегистрирован.".
 
     Raises:
         HTTPException 400: Если пользователь с таким email уже существует.
-        HTTPException 400: При других ошибках валидации данных.
+        HTTPException 400: При ошибках валидации данных.
     """
     await auth_service.register(user)
     return {"msg": "Новый пользователь зарегистрирован."}
 
 
-@router.post("/login")
+@router.post(
+    "/login",
+    responses={
+        201: {"description": "Login successful"},
+        401: {"description": "Invalid credentials"},
+    },
+)
 async def login(
     credentials: UserLoginSchema,
     auth_service: Annotated["AuthService", Depends(get_auth_service)],
@@ -70,7 +87,13 @@ async def login(
     return await auth_service.login(credentials)
 
 
-@router.post("/logout")
+@router.post(
+    "/logout",
+    responses={
+        204: {"description": "Logout successful"},
+        401: {"description": "Not authenticated"},
+    },
+)
 async def logout(
     auth_service: Annotated["AuthService", Depends(get_auth_service)],
 ) -> Response:

@@ -1,5 +1,5 @@
-# import logging
-# from logging.config import dictConfig
+import logging
+from logging.config import dictConfig
 from contextlib import asynccontextmanager
 import uvicorn
 
@@ -9,9 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from cfg.app import app_cfg
 from cfg.logging import LOGGING_CONFIG
 
-# Настройка логирования
-# dictConfig(LOGGING_CONFIG)
-# logger = logging.getLogger("app")
+dictConfig(LOGGING_CONFIG)
+logger = logging.getLogger("app")
 
 from api import router
 from db.connector import ConnectionManager
@@ -27,9 +26,9 @@ async def lifespan(app_: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    # docs_url=app_conf.run.docs_url,
-    # redoc_url=app_conf.run.redoc_url,
-    # openapi_url=app_conf.run.openapi_url,
+    # docs_url=app_cfg.RUN.docs_url,
+    # redoc_url=app_cfg.RUN.redoc_url,
+    # openapi_url=app_cfg.RUN.openapi_url,
 )
 
 app.add_middleware(
@@ -44,7 +43,7 @@ app.include_router(router)
 
 
 if __name__ == "__main__":
-    # logger.info(f"Запуск сервера на http://{app_conf.run.host}:{app_conf.run.port}")
+    logger.info(f"Запуск сервера на http://{app_cfg.RUN.host}:{app_cfg.RUN.port}")
     uvicorn.run(
         "main:app",
         host=app_cfg.RUN.host,

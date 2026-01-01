@@ -15,23 +15,6 @@ if TYPE_CHECKING:
     from db.provider import Provider
 
 
-from typing import TYPE_CHECKING, Optional
-
-from fastapi import Response
-
-from utils.exceptions import AppErrors
-from .cookie import cookie_transport
-from .token import create_access_token, create_refresh_token
-from .password import validate_password, hash_password
-
-
-if TYPE_CHECKING:
-    from schemas import UserCreateSchema, UserLoginSchema
-    from .cookie import CookieTransport
-    from db.models import UserDB
-    from db.provider import Provider
-
-
 class AuthService:
     """
     Сервис аутентификации и авторизации пользователей.

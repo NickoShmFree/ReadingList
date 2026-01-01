@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING, Optional, Sequence
 
-from schemas import ItemResponseSchema, ItemResponseSchema
+from schemas import ItemResponseSchema
 from utils.exceptions import AppErrors
 
 if TYPE_CHECKING:
     from db.provider import Provider
     from schemas import ItemCreateSchema, ItemFilters, ItemUpdateSchema
-    from db.models import ItemDB, TagDB, ItemTagDB
+    from db.models import ItemDB, TagDB
 
 
 class ItemService:
@@ -17,18 +17,21 @@ class ItemService:
     def __init__(self, provider_db: "Provider") -> None:
         self.provider_db = provider_db
 
-    async def add(
+    async def create_item(
         self, user_id: int, item_add: "ItemCreateSchema"
     ) -> ItemResponseSchema:
         """
-        Создает новую книгу (статью) чтения с тегами.
+        Создает новый элемент списка чтения (книгу или статью).
 
         Args:
-            user_id: ID пользователя
-            item_add: Данные для создания
+            user_id: ID пользователя-владельца
+            item_data: Данные для создания элемента
 
         Returns:
-            Созданный список чтения
+            Созданный элемент с тегами
+
+        Raises:
+            AppErrors.bad_request: При ошибках валидации данных
         """
         result_tags: list["TagDB"] = []
         item: "ItemDB" = await self.provider_db.item.add(user_id, item_add)
@@ -50,15 +53,17 @@ class ItemService:
 
     async def get_item(self, item_id: int) -> ItemResponseSchema:
         """
-        Получает элемент по ID.
+        Получает элемент списка чтения по ID.
 
         Args:
             item_id: ID элемента
+
         Returns:
             Элемент с тегами
 
         Raises:
-            HTTPException 404: Если элемент не найден
+            AppErrors.not_found: Если элемент не найден
+            AppErrors.gone: Если элемент удален
         """
         item: Optional["ItemDB"] = await self.provider_db.item.get_by_id(
             item_id, load_tags=True
@@ -85,15 +90,16 @@ class ItemService:
         filters: "ItemFilters",
     ) -> list[ItemResponseSchema]:
         """
-        Получает элемент по ID.
+        Получает элементы списка чтения с фильтрацией.
 
         Args:
-            item_id: ID элемента
-        Returns:
-            Элемент с тегами
+            filters: Параметры фильтрации, сортировки и пагинации
 
-        Raises:
-            HTTPException 404: Если элемент не найден
+        Returns:
+            Список элементов, удовлетворяющих фильтрам
+
+        Note:
+            По умолчанию не включает удаленные элементы
         """
 
         items: Sequence["ItemDB"] = await self.provider_db.item.get_items(
@@ -108,6 +114,7 @@ class ItemService:
             status=filters.status,
             priority=filters.priority,
             kind=filters.kind,
+            title_search=filters.title_search,
         )
         return [
             ItemResponseSchema(
@@ -124,7 +131,24 @@ class ItemService:
             for item in items
         ]
 
-    async def del_item(self, *, item_id: int, user_id: int) -> ItemResponseSchema:
+    async def soft_delete_item(
+        self, *, item_id: int, user_id: int
+    ) -> ItemResponseSchema:
+        """
+        Выполняет мягкое удаление элемента (помечает как удаленный).
+
+        Args:
+            item_id: ID элемента для удаления
+            user_id: ID пользователя (для проверки прав)
+
+        Returns:
+            Информация об удаленном элементе
+
+        Raises:
+            AppErrors.not_found: Если элемент не найден
+            AppErrors.forbidden: Если элемент принадлежит другому пользователю
+            AppErrors.gone: Если элемент уже удален
+        """
         item: Optional["ItemDB"] = await self.provider_db.item.get_by_id(
             item_id, load_tags=True
         )
@@ -151,10 +175,24 @@ class ItemService:
 
     async def update_item(
         self,
-        *,
         user_id: int,
         new_item: "ItemUpdateSchema",
     ) -> ItemResponseSchema:
+        """
+        Обновляет элемент списка чтения.
+
+        Args:
+            user_id: ID пользователя (для проверки прав)
+            update_data: Данные для обновления (должен содержать id элемента)
+
+        Returns:
+            Обновленный элемент с тегами
+
+        Raises:
+            AppErrors.not_found: Если элемент не найден
+            AppErrors.forbidden: Если элемент принадлежит другому пользователю
+            AppErrors.gone: Если элемент удален
+        """
         item: Optional["ItemDB"] = await self.provider_db.item.get_by_id(
             new_item.id, load_tags=True
         )
@@ -192,21 +230,19 @@ class ItemService:
             updated_at=item.updated_at,
         )
 
-    async def __add_tags(self, user_id: int, tags: list[str]) -> list["TagDB"]:
-        existing_tags, new_tag_names = (
-            await self.provider_db.tag.get_existing_and_new_tags(user_id, tags)
-        )
-        if new_tag_names:
-            new_tags: Sequence["TagDB"] = await self.provider_db.tag.add(
-                user_id, new_tag_names
-            )
-            await self.provider_db.session.flush()
-            result_tags: list["TagDB"] = list(existing_tags) + list(new_tags)
-        else:
-            result_tags = list(existing_tags)
-        return result_tags
+    # ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
 
-    async def __del_item_tags(self, user_id: int, tags: list[str]) -> list["TagDB"]:
+    async def __add_tags(self, user_id: int, tags: list[str]) -> list["TagDB"]:
+        """
+        Находит или создает теги для пользователя.
+
+        Args:
+            user_id: ID пользователя-владельца тегов
+            tag_names: Список названий тегов
+
+        Returns:
+            Список объектов TagDB (существующие и созданные)
+        """
         existing_tags, new_tag_names = (
             await self.provider_db.tag.get_existing_and_new_tags(user_id, tags)
         )
@@ -221,6 +257,16 @@ class ItemService:
         return result_tags
 
     def __create_update_data(self, item: "ItemDB", new_item: "ItemUpdateSchema"):
+        """
+        Создает словарь с данными для обновления элемента.
+
+        Args:
+            item: Существующий элемент из БД
+            new_item: Новые данные для обновления
+
+        Returns:
+            Словарь с измененными полями
+        """
         update_data = {}
         if item.title != new_item.title:
             update_data["title"] = new_item.title
@@ -238,7 +284,17 @@ class ItemService:
         self, *, tags_old: list["TagDB"], tags_new: list[str]
     ) -> tuple[list[int], list[str]]:
         """
-        Простая версия сравнения тегов.
+        Сравнивает старые и новые теги, возвращая разницу.
+
+        Args:
+            tags_old: Существующие теги элемента
+            tags_new: Новые теги (может быть None)
+
+        Returns:
+            Кортеж: (tag_ids_to_delete, tag_names_to_add)
+
+        Note:
+            Если tags_new = None, теги не изменяются
         """
         # Извлекаем названия старых тегов
         old_names = [tag.name for tag in tags_old]

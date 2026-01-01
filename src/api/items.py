@@ -63,7 +63,7 @@ async def get_items(
         Query(
             description="Фильтр по тегам (элементы с ЛЮБЫМ из указанных тегов). "
             "Можно указать несколько тегов: &tags=python&tags=programming",
-            max_length=10,  # максимум 10 тегов для фильтрации
+            max_length=10,
         ),
     ] = None,
     # Диапазон дат

@@ -12,7 +12,7 @@ class DBCfg(BaseSettings):
     port: int = Field(default=5432, alias="PORT")
     user: str = Field(default="postgres", alias="POSTGRES_USER")
     password: str = Field(default="password", alias="POSTGRES_PASSWORD")
-    name_db: str | None = Field(default=None, alias="NAME_DB")
+    name_db: str | None = Field(default=None, alias="POSTGRES_DB")
 
     pool_size: int = 50
     max_overflow: int = 50

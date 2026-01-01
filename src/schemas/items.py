@@ -30,12 +30,11 @@ class ItemBaseSchema(BaseModel):
     MAX_TAGS_COUNT: ClassVar[int] = 20
 
     # Запрещенные символы в тегах
-    FORBIDDEN_TAG_CHARS: ClassVar[set[str]] = {"<", ">", "&", '"', "'", "\\", "/", ";"}
+    FORBIDDEN_TAG_CHARS: ClassVar[set[str]] = {"<", ">", "&", '"', "'", "\\", ";"}
 
     model_config = ConfigDict(
         str_strip_whitespace=True,
         use_enum_values=True,
-        frozen=True,  # Делаем иммутабельным для безопасности
     )
 
     title: str = Field(
@@ -62,10 +61,10 @@ class ItemBaseSchema(BaseModel):
         default=ItemPriorityEnum.NORMAL,
     )
 
-    notes: str = Field(
+    notes: str | None = Field(
         description="Дополнительные заметки или описание",
         examples=["Обязательно к прочтению каждому разработчику"],
-        default="",
+        default=None,
     )
 
     tags: list[str] = Field(
@@ -87,31 +86,28 @@ class ItemBaseSchema(BaseModel):
         if "  " in title:
             raise ValueError("Название не должно содержать двойных пробелов")
 
-        # Можно добавить дополнительные проверки
-        # if title.startswith("http://") or title.startswith("https://"):
-        #     raise ValueError("Название не должно быть URL")
-
         return title
 
     @field_validator("notes")
     @classmethod
-    def validate_notes(cls, notes: str) -> str:
+    def validate_notes(cls, notes: str | None) -> str | None:
         """
         Валидация заметок.
         """
         # Проверяем минимальную длину для непустых заметок
-        stripped = notes.strip()
-        if stripped and len(stripped) < cls.NOTES_MIN_LENGTH:
-            raise ValueError(
-                f"Заметки должны содержать минимум {cls.NOTES_MIN_LENGTH} символа "
-                f"или быть пустыми"
-            )
+        if notes is not None:
+            stripped = notes.strip()
+            if stripped and len(stripped) < cls.NOTES_MIN_LENGTH:
+                raise ValueError(
+                    f"Заметки должны содержать минимум {cls.NOTES_MIN_LENGTH} символа "
+                    f"или быть пустыми"
+                )
 
-        # Проверяем максимальную длину (уже есть в Field)
-        if len(notes) > cls.NOTES_MAX_LENGTH:
-            raise ValueError(
-                f"Заметки не должны превышать {cls.NOTES_MAX_LENGTH} символов"
-            )
+            # Проверяем максимальную длину (уже есть в Field)
+            if len(notes) > cls.NOTES_MAX_LENGTH:
+                raise ValueError(
+                    f"Заметки не должны превышать {cls.NOTES_MAX_LENGTH} символов"
+                )
 
         return notes
 
@@ -201,97 +197,11 @@ class ItemUpdateSchema(ItemBaseSchema, IdSchema):
     pass
 
 
-# class ItemUpdateSchema(BaseModel):
-#     """
-#     Схема для обновления списка чтения.
-#     Все поля опциональны.
-#     """
-
-#     model_config = ConfigDict(
-#         str_strip_whitespace=True,
-#     )
-
-#     title: str | None = Field(
-#         default=None,
-#         min_length=ItemBaseSchema.TITLE_MIN_LENGTH,
-#         max_length=ItemBaseSchema.TITLE_MAX_LENGTH,
-#         description="Новое название",
-#     )
-
-#     kind: ItemKindEnum | None = Field(
-#         default=None,
-#         description="Новый тип",
-#     )
-
-#     status: ItemStatusEnum | None = Field(
-#         default=None,
-#         description="Новый статус",
-#     )
-
-#     priority: ItemKindEnum | None = Field(
-#         default=None,
-#         description="Новый приоритет",
-#     )
-
-#     notes: str | None = Field(
-#         default=None,
-#         min_length=ItemBaseSchema.NOTES_MIN_LENGTH,
-#         max_length=ItemBaseSchema.NOTES_MAX_LENGTH,
-#         description="Новые заметки",
-#     )
-
-#     tags: list[str] | None = Field(
-#         default=None,
-#         description="Новый список тегов",
-#     )
-
-#     @model_validator(mode="after")
-#     def validate_at_least_one_field(self) -> "ItemUpdateSchema":
-#         """
-#         Проверяет, что передан хотя бы один параметр для обновления.
-#         """
-#         if all(value is None for value in self.model_dump().values()):
-#             raise ValueError("Должен быть указан хотя бы один параметр для обновления")
-#         return self
-
-
-class ItemResponseSchema(IdSchema):
+class ItemResponseSchema(IdSchema, ItemBaseSchema):
     """Схема для ответа API при чтении списка чтения."""
 
     model_config = ConfigDict(
         from_attributes=True,
-        frozen=True,
-    )
-
-    title: str = Field(
-        description="Название",
-        examples=["Чистый код"],
-    )
-
-    kind: ItemKindEnum = Field(
-        description="Тип элемента",
-        examples=[ItemKindEnum.BOOK],
-    )
-
-    status: ItemStatusEnum = Field(
-        description="Статус чтения",
-        examples=[ItemStatusEnum.PLANNED],
-    )
-
-    priority: ItemPriorityEnum = Field(
-        description="Приоритет",
-        examples=[ItemPriorityEnum.NORMAL],
-    )
-
-    notes: str = Field(
-        description="Заметки",
-        examples=["Обязательно к прочтению"],
-    )
-
-    tags: list[str] = Field(
-        description="Теги",
-        examples=[["программирование", "python"]],
-        default_factory=list,
     )
 
     created_at: datetime = Field(
@@ -306,26 +216,80 @@ class ItemResponseSchema(IdSchema):
 
 
 class ItemFilters(BaseModel):
-    """Модель фильтров для элементов."""
+    """
+    Модель фильтров для элементов списка чтения.
+    """
 
-    status: ItemStatusEnum | None = None
-    kind: ItemKindEnum | None = None
-    priority: ItemPriorityEnum | None = None
+    model_config = ConfigDict(
+        extra="forbid",  # Запрещаем неизвестные поля
+        json_schema_extra={
+            "example": {
+                "status": "планирую прочитать",
+                "kind": "книга",
+                "priority": "средний",
+                "title_search": "чистый",
+                "tag_names": ["python", "алгоритмы"],
+                "created_from": "2024-01-01",
+                "created_to": "2024-12-31",
+                "sort_by": "created_at",
+                "sort_order": "desc",
+                "offset": 0,
+                "limit": 20,
+            }
+        },
+    )
 
-    title_search: str | None = None
+    status: ItemStatusEnum | None = Field(None, description="Фильтр по статусу чтения")
 
-    tag_names: list[str] | None = None
+    kind: ItemKindEnum | None = Field(
+        None, description="Фильтр по типу элемента (книга/статья)"
+    )
 
-    created_from: date | None = None
-    created_to: date | None = None
+    priority: ItemPriorityEnum | None = Field(
+        None, description="Фильтр по приоритету чтения"
+    )
 
-    include_deleted: bool = False
+    title_search: str | None = Field(
+        None,
+        min_length=2,
+        max_length=50,
+        description="Поиск по подстроке в названии (регистронезависимый)",
+    )
+    tag_names: list[str] | None = Field(
+        None,
+        description="Фильтр по названиям тегов",
+        max_length=20,
+    )
 
-    sort_by: SortBy
-    sort_order: SortOrder
+    created_from: date | None = Field(
+        None, description="Начало диапазона дат создания (включительно)"
+    )
 
-    offset: int = 0
-    limit: int = 20
+    created_to: date | None = Field(
+        None, description="Конец диапазона дат создания (включительно)"
+    )
+
+    include_deleted: bool = Field(False, exclude=True)
+
+    sort_by: SortBy = Field(
+        SortBy.CREATED_AT, description="Поле для сортировки результатов"
+    )
+
+    sort_order: SortOrder = Field(SortOrder.DESC, description="Направление сортировки")
+
+    offset: int = Field(
+        0,
+        ge=0,
+        le=10000,
+        description="Смещение для пагинации (сколько элементов пропустить)",
+    )
+
+    limit: int = Field(
+        20,
+        ge=1,
+        le=100,
+        description="Количество элементов на странице",
+    )
 
     @field_validator("tag_names")
     @classmethod
@@ -336,14 +300,6 @@ class ItemFilters(BaseModel):
             if not cleaned:
                 return None
             return list(cleaned)
-        return v
-
-    @field_validator("sort_by")
-    @classmethod
-    def validate_sort_by(cls, v: str) -> str:
-        allowed = {"created_at", "updated_at", "priority"}
-        if v not in allowed:
-            raise ValueError(f"sort_by должно быть одним из: {allowed}")
         return v
 
     @field_validator("sort_order")

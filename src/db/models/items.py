@@ -41,6 +41,7 @@ class ItemDB(Base, CreatedAtMixin, IdIntMixin, UpdatedAtMixin):
             native_enum=True,
             create_constraint=True,
         ),
+        index=True,
     )
     status: Mapped[ItemStatusEnum] = mapped_column(
         Enum(
@@ -49,6 +50,7 @@ class ItemDB(Base, CreatedAtMixin, IdIntMixin, UpdatedAtMixin):
             native_enum=True,
             create_constraint=True,
         ),
+        index=True,
     )
     priority: Mapped[ItemPriorityEnum] = mapped_column(
         Enum(
@@ -57,11 +59,12 @@ class ItemDB(Base, CreatedAtMixin, IdIntMixin, UpdatedAtMixin):
             native_enum=True,
             create_constraint=True,
         ),
+        index=True,
     )
 
-    notes: Mapped[str] = mapped_column(String(2500))
+    notes: Mapped[str] = mapped_column(String(2500), nullable=True)
 
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
     user: Mapped["UserDB"] = relationship(
         back_populates="items",
@@ -75,7 +78,7 @@ class ItemDB(Base, CreatedAtMixin, IdIntMixin, UpdatedAtMixin):
 
 class TagDB(Base, IdIntMixin):
     __tablename__ = "tags"
-    name: Mapped[str] = mapped_column(String(50))
+    name: Mapped[str] = mapped_column(String(50), index=True)
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
