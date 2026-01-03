@@ -8,7 +8,6 @@ Create Date: 2026-01-01 22:47:08.786054
 
 from typing import Sequence, Union
 from datetime import datetime
-from sqlalchemy import Table, MetaData
 
 from alembic import op
 import sqlalchemy as sa
@@ -24,73 +23,95 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
 
-    # Получаем таблицы для вставки данных
-    metadata = MetaData()
-    metadata.reflect(bind=op.get_bind())
+    # Создаем временные таблицы для bulk insert (без колонки id)
+    users_table = sa.table(
+        "users",
+        sa.column("display_name"),
+        sa.column("email"),
+        sa.column("hashed_password"),
+        sa.column("created_at"),
+    )
 
-    users_table = metadata.tables["users"]
-    items_table = metadata.tables["items"]
-    tags_table = metadata.tables["tags"]
-    item_tags_table = metadata.tables["item_tags"]
+    tags_table = sa.table(
+        "tags",
+        sa.column("name"),
+        sa.column("user_id"),
+    )
 
-    # Вставляем тестовых пользователей
+    items_table = sa.table(
+        "items",
+        sa.column("user_id"),
+        sa.column("title"),
+        sa.column("kind"),
+        sa.column("status"),
+        sa.column("priority"),
+        sa.column("notes"),
+        sa.column("is_deleted"),
+        sa.column("created_at"),
+        sa.column("updated_at"),
+    )
+
+    item_tags_table = sa.table(
+        "item_tags",
+        sa.column("item_id"),
+        sa.column("tag_id"),
+    )
+
+    # Вставляем тестовых пользователей - БЕЗ указания id!
     op.bulk_insert(
         users_table,
         [
             {
-                "id": 1,
                 "display_name": "Иван Тестовый",
                 "email": "ivan@example.com",
-                "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # password: "secret"
+                "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
                 "created_at": datetime.now(),
             },
             {
-                "id": 2,
                 "display_name": "Анна Тестова",
                 "email": "anna@example.com",
-                "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # password: "secret"
+                "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
                 "created_at": datetime.now(),
             },
         ],
     )
 
-    # Вставляем теги
+    # Вставляем теги - БЕЗ указания id!
+    # Предполагаем, что пользователи получат ID 1 и 2 (по порядку вставки)
     op.bulk_insert(
         tags_table,
         [
             # Теги для пользователя 1
-            {"id": 1, "name": "программирование", "user_id": 1},
-            {"id": 2, "name": "python", "user_id": 1},
-            {"id": 3, "name": "алгоритмы", "user_id": 1},
-            {"id": 4, "name": "базы данных", "user_id": 1},
-            {"id": 5, "name": "веб-разработка", "user_id": 1},
+            {"name": "программирование", "user_id": 1},
+            {"name": "python", "user_id": 1},
+            {"name": "алгоритмы", "user_id": 1},
+            {"name": "базы данных", "user_id": 1},
+            {"name": "веб-разработка", "user_id": 1},
             # Теги для пользователя 2
-            {"id": 6, "name": "дизайн", "user_id": 2},
-            {"id": 7, "name": "ux/ui", "user_id": 2},
-            {"id": 8, "name": "фигма", "user_id": 2},
-            {"id": 9, "name": "типографика", "user_id": 2},
+            {"name": "дизайн", "user_id": 2},
+            {"name": "ux/ui", "user_id": 2},
+            {"name": "фигма", "user_id": 2},
+            {"name": "типографика", "user_id": 2},
         ],
     )
 
-    # Вставляем элементы (items) для пользователя 1
+    # Вставляем элементы (items) для пользователя 1 - БЕЗ указания id!
     op.bulk_insert(
         items_table,
         [
-            # Книги с высоким приоритетом
+            # Книги с высоким приоритетом (для пользователя 1)
             {
-                "id": 1,
                 "user_id": 1,
                 "title": "Чистый код",
-                "kind": "BOOK",  
-                "status": "PLANNED", 
-                "priority": "HIGH", 
+                "kind": "BOOK",
+                "status": "PLANNED",
+                "priority": "HIGH",
                 "notes": "Обязательно к прочтению каждому разработчику",
                 "is_deleted": False,
                 "created_at": datetime(2024, 1, 15, 10, 30, 0),
                 "updated_at": datetime(2024, 1, 15, 10, 30, 0),
             },
             {
-                "id": 2,
                 "user_id": 1,
                 "title": "Грокаем алгоритмы",
                 "kind": "BOOK",
@@ -102,7 +123,6 @@ def upgrade() -> None:
                 "updated_at": datetime(2024, 1, 20, 16, 45, 0),
             },
             {
-                "id": 3,
                 "user_id": 1,
                 "title": "Рефакторинг",
                 "kind": "BOOK",
@@ -113,9 +133,8 @@ def upgrade() -> None:
                 "created_at": datetime(2023, 12, 5, 9, 15, 0),
                 "updated_at": datetime(2024, 1, 5, 11, 30, 0),
             },
-            # Статьи
+            # Статьи (для пользователя 1)
             {
-                "id": 4,
                 "user_id": 1,
                 "title": "Асинхронное программирование в Python",
                 "kind": "ARTICLE",
@@ -127,7 +146,6 @@ def upgrade() -> None:
                 "updated_at": datetime(2024, 1, 25, 13, 40, 0),
             },
             {
-                "id": 5,
                 "user_id": 1,
                 "title": "Оптимизация SQL запросов",
                 "kind": "ARTICLE",
@@ -138,9 +156,8 @@ def upgrade() -> None:
                 "created_at": datetime(2023, 11, 20, 16, 10, 0),
                 "updated_at": datetime(2023, 12, 10, 12, 25, 0),
             },
-            # Удаленный элемент
+            # Удаленный элемент (для пользователя 1)
             {
-                "id": 6,
                 "user_id": 1,
                 "title": "Устаревшая статья про Django 2",
                 "kind": "ARTICLE",
@@ -153,7 +170,6 @@ def upgrade() -> None:
             },
             # Элементы для пользователя 2
             {
-                "id": 7,
                 "user_id": 2,
                 "title": "Дизайн для разработчиков",
                 "kind": "BOOK",
@@ -165,7 +181,6 @@ def upgrade() -> None:
                 "updated_at": datetime(2024, 2, 1, 11, 20, 0),
             },
             {
-                "id": 8,
                 "user_id": 2,
                 "title": "Figma для начинающих",
                 "kind": "ARTICLE",
@@ -180,6 +195,9 @@ def upgrade() -> None:
     )
 
     # Создаем связи между элементами и тегами
+    # Предполагаем, что:
+    # - items получили ID 1-8 (по порядку вставки)
+    # - tags получили ID 1-9 (по порядку вставки)
     op.bulk_insert(
         item_tags_table,
         [
@@ -214,6 +232,14 @@ def upgrade() -> None:
         ],
     )
 
+    # Обновляем sequences (важно!)
+    op.execute("SELECT setval('users_id_seq', (SELECT MAX(id) FROM users), true)")
+    op.execute("SELECT setval('items_id_seq', (SELECT MAX(id) FROM items), true)")
+    op.execute("SELECT setval('tags_id_seq', (SELECT MAX(id) FROM tags), true)")
+    op.execute(
+        "SELECT setval('item_tags_id_seq', (SELECT MAX(id) FROM item_tags), true)"
+    )
+
 
 def downgrade() -> None:
     """Downgrade schema."""
@@ -230,3 +256,4 @@ def downgrade() -> None:
         op.execute("SELECT setval('users_id_seq', 1, false)")
         op.execute("SELECT setval('items_id_seq', 1, false)")
         op.execute("SELECT setval('tags_id_seq', 1, false)")
+        op.execute("SELECT setval('item_tags_id_seq', 1, false)")
