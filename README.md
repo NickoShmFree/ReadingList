@@ -68,3 +68,5 @@ ReadingList/
          Логин       │  Пароль  │       Имя
     ivan@example.com │  secret  │  Иван Тестовый (id=1)
     anna@example.com │  secret  │  Анна Тестова (id=2)
+
+## Логи сервиса пишутся в папку logs
