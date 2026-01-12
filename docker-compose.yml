@@ -15,7 +15,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-user} -d ${NAME_DB:-readinglist}",
+          "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-reading-list}",
         ]
       interval: 10s
       timeout: 5s
